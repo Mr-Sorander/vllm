@@ -19,6 +19,10 @@ def create_parser():
     EngineArgs.add_cli_args(parser)
     parser.set_defaults(model="meta-llama/Llama-3.2-1B-Instruct")
     # Add sampling params
+    """
+    - parser.add_argument_group("Sampling parameters") 会在命令行帮助（help）中创建一个带标题的参数组（ArgumentGroup），用于把相关的参数按组组织起来，便于阅读和分类。
+    - 它返回一个可以调用 add_argument(...) 的组对象（_ArgumentGroup），组内的参数仍由同一个 ArgumentParser 解析——也就是说它只影响文档/显示，不改变解析或校验行为。
+    """
     sampling_group = parser.add_argument_group("Sampling parameters")
     sampling_group.add_argument("--max-tokens", type=int)
     sampling_group.add_argument("--temperature", type=float)
@@ -35,7 +39,7 @@ def main(args: dict):
     """
     从命令行的参数解析器中获取的参数，有一些是构造LLM不需要的（采样参数）
     """
-    max_tokens = args.pop("max_tokens")
+    max_tokens = args.pop("max_tokens") # 【注意】这里的键值和之前添加的参数不一样,【问题是】：为什么确定这个是key？
     temperature = args.pop("temperature")
     top_p = args.pop("top_p")
     top_k = args.pop("top_k")
