@@ -1,11 +1,19 @@
 # SPDX-License-Identifier: Apache-2.0
 # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
 
+"""
+basic.py只是展示了llm生成的基本用法，实际上，chat类的应用是带有对话上下文的。
+"""
+
 from vllm import LLM, EngineArgs
 from vllm.utils import FlexibleArgumentParser
 
 
 def create_parser():
+    """
+    将命令行参数与脚本参数分离，使得在命令行中的就可以灵活控制采样参数。
+    我估计是生产环境没有ide，所以只能用命令行启动脚本。这种环境下，如果频繁改脚本，就显得很笨拙
+    """
     parser = FlexibleArgumentParser()
     # Add engine args
     EngineArgs.add_cli_args(parser)
@@ -24,6 +32,9 @@ def create_parser():
 
 def main(args: dict):
     # Pop arguments not used by LLM
+    """
+    从命令行的参数解析器中获取的参数，有一些是构造LLM不需要的（采样参数）
+    """
     max_tokens = args.pop("max_tokens")
     temperature = args.pop("temperature")
     top_p = args.pop("top_p")
@@ -34,7 +45,9 @@ def main(args: dict):
     llm = LLM(**args)
 
     # Create sampling params object
-    sampling_params = llm.get_default_sampling_params()
+    # 获取并修改采样超参，如果命令行中带了 max_tokens/temperature/top_p/top_k（非 None），就覆盖 sampling_params 中对应字段。
+    # 类比basic.py中，采样参数是通过 sampling_params = SamplingParams(temperature=0.8, top_p=0.95) 设置
+    sampling_params = llm.get_default_sampling_params() 
     if max_tokens is not None:
         sampling_params.max_tokens = max_tokens
     if temperature is not None:
@@ -48,7 +61,7 @@ def main(args: dict):
         print("\nGenerated Outputs:\n" + "-" * 80)
         for output in outputs:
             prompt = output.prompt
-            generated_text = output.outputs[0].text
+            generated_text = output.outputs[0].text # 打印第一组tokens（与采样参数重的n有关，默认为1）
             print(f"Prompt: {prompt!r}\n")
             print(f"Generated text: {generated_text!r}")
             print("-" * 80)
@@ -69,7 +82,7 @@ def main(args: dict):
     print_outputs(outputs)
 
     # You can run batch inference with llm.chat API
-    conversations = [conversation for _ in range(10)]
+    conversations = [conversation for _ in range(10)] # 虚构了10段对话，模拟并发情况
 
     # We turn on tqdm progress bar to verify it's indeed running batch inference
     outputs = llm.chat(conversations, sampling_params, use_tqdm=True)
